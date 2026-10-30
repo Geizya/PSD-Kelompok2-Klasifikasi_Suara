@@ -1,0 +1,22 @@
+# Dataset audio mentah (besar, tidak perlu di image)
+berisik/
+non-berisik/
+
+# Jupyter Notebook
+*.ipynb
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Git
+.git/
+.gitignore
+
+# Windows batch file (tidak dipakai di dalam container Linux)
+*.bat
+
+# File ini sendiri
+.dockerignore
+

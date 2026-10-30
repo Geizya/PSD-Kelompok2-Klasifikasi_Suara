@@ -1,0 +1,7 @@
+﻿segmen,waktu_mulai_detik,waktu_selesai_detik,prediksi,probabilitas_berisik
+1,0,5.0,non_berisik,0.36737500000000006
+2,5,10.0,berisik,0.5689583333333332
+3,10,15.0,non_berisik,0.27158333333333334
+4,15,20.0,non_berisik,0.13804166666666667
+5,20,25.0,non_berisik,0.24416666666666664
+6,25,30.0,non_berisik,0.2815

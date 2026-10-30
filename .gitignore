@@ -1,0 +1,21 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Dataset audio mentah (bisa sangat besar)
+berisik/
+non-berisik/
+
+# Output sementara (model artifact tetap di-commit agar langsung bisa dipakai)
+# output/
+
+# OS files
+.DS_Store
+Thumbs.db
+

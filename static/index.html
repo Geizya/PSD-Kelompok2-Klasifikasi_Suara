@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Deteksi & Klasifikasi Suara Berisik | Machine Learning</title>
+  <meta name="description" content="Aplikasi web cerdas klasifikasi suara berisik vs non-berisik menggunakan Random Forest dan audio feedback notif.mp3 real-time.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Background Glow FX -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Audio Element for Feedback notif.mp3 -->
+  <audio id="feedbackAudio" src="/audio/notif.mp3" preload="auto"></audio>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-waveform-lines"></i>
+        </div>
+        <div>
+          <h1 class="brand-title">AudioNoise <span class="gradient-text">Detector AI</span></h1>
+          <p class="brand-subtitle">Klasifikasi Suara Berisik & Non-Berisik Berbasis Random Forest (32 Fitur Akustik)</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <!-- Audio Feedback Quick Control -->
+        <div class="feedback-badge-control">
+          <button id="btnTestNotif" class="btn-ghost" title="Putar suara feedback notif.mp3">
+            <i class="fa-solid fa-volume-high"></i> Uji notif.mp3
+          </button>
+          <div class="toggle-wrapper" title="Aktif / Nonaktifkan Suara Feedback">
+            <input type="checkbox" id="toggleFeedback" checked>
+            <label for="toggleFeedback" class="toggle-slider"></label>
+            <span class="toggle-label"><i class="fa-solid fa-bell"></i> Feedback Suara</span>
+          </div>
+        </div>
+
+        <!-- Model Status Badge -->
+        <div class="model-badge" id="modelStatusBadge">
+          <span class="status-dot active"></span>
+          <span>Model: <strong>Random Forest (85.8% Acc)</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="main-layout">
+      <!-- Left Column: Controls & Visualizer -->
+      <section class="panel panel-primary">
+        <!-- Tab Navigation: Mic vs File -->
+        <div class="tab-header">
+          <button class="tab-btn active" id="tabMicBtn" data-tab="micTab">
+            <i class="fa-solid fa-microphone-lines"></i> Deteksi Mikrofon Real-Time
+          </button>
+          <button class="tab-btn" id="tabFileBtn" data-tab="fileTab">
+            <i class="fa-solid fa-file-audio"></i> Uji File Audio
+          </button>
+        </div>
+
+        <!-- TAB 1: Real-Time Microphone -->
+        <div class="tab-content active" id="micTab">
+          <div class="mic-hero-section">
+            <div class="mic-button-wrapper">
+              <button id="btnToggleMic" class="mic-glow-btn">
+                <div class="mic-icon-circle">
+                  <i class="fa-solid fa-microphone" id="micMainIcon"></i>
+                </div>
+                <div class="mic-btn-text">
+                  <span class="mic-btn-main" id="micBtnMainText">Mulai Deteksi Mikrofon</span>
+                  <span class="mic-btn-sub" id="micBtnSubText">Klik untuk mulai mendengarkan lingkungan</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Listening Status Bar -->
+            <div class="listening-bar" id="listeningBar" style="display: none;">
+              <div class="pulse-indicator">
+                <span class="pulse-ring"></span>
+                <span class="pulse-core"></span>
+              </div>
+              <span id="listeningStatusText">Mikrofon Aktif — Mengambil segmen audio setiap 3 detik...</span>
+              <div class="chunk-timer-bar">
+                <div class="chunk-timer-progress" id="chunkProgress"></div>
+              </div>
+            </div>
+
+            <!-- Audio Canvas Visualizer -->
+            <div class="visualizer-container">
+              <canvas id="visualizerCanvas" width="800" height="150"></canvas>
+              <div class="visualizer-overlay" id="visualizerOverlay">
+                <i class="fa-solid fa-wave-square"></i>
+                <span>Visualizer Audio Standby (Tekan tombol Mulai)</span>
+              </div>
+            </div>
+
+            <!-- Mic Settings Bar -->
+            <div class="mic-config-bar">
+              <div class="config-item">
+                <label for="selectInterval"><i class="fa-solid fa-clock"></i> Interval Analisis:</label>
+                <select id="selectInterval">
+                  <option value="3000">Setiap 3 Detik (Cepat / Responsif)</option>
+                  <option value="5000" selected>Setiap 5 Detik (Sesuai Segment Dataset)</option>
+                </select>
+              </div>
+
+              <div class="config-item">
+                <label for="feedbackCooldown"><i class="fa-solid fa-stopwatch"></i> Cooldown Suara:</label>
+                <select id="feedbackCooldown">
+                  <option value="2000">2 Detik</option>
+                  <option value="4000" selected>4 Detik (Disarankan)</option>
+                  <option value="7000">7 Detik</option>
+                </select>
+              </div>
+
+              <div class="config-item">
+                <label for="feedbackVolume"><i class="fa-solid fa-volume-low"></i> Volume Feedback:</label>
+                <input type="range" id="feedbackVolume" min="0" max="1" step="0.05" value="0.85">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: File Upload Mode -->
+        <div class="tab-content" id="fileTab">
+          <div class="upload-dropzone" id="dropZone">
+            <input type="file" id="audioFileInput" accept=".mp3,.wav,.ogg,.m4a,.flac" style="display: none;">
+            <div class="dropzone-content">
+              <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+              <h3>Tarik & Letakkan File Audio di Sini</h3>
+              <p>Mendukung format MP3, WAV, OGG, M4A, FLAC</p>
+              <button class="btn-primary" id="btnBrowseFile">
+                <i class="fa-solid fa-folder-open"></i> Pilih File Audio
+              </button>
+            </div>
+          </div>
+
+          <div class="quick-samples">
+            <span>Uji Coba Cepat:</span>
+            <button class="btn-sample" id="btnTestCobasuara">
+              <i class="fa-solid fa-play"></i> Analisis cobasuara1.mp3 (Bawaan)
+            </button>
+          </div>
+
+          <div id="fileUploadInfo" class="file-info-bar" style="display: none;">
+            <i class="fa-solid fa-music"></i>
+            <span id="fileNameDisplay">audio.mp3</span>
+            <span id="fileSizeDisplay">(0 KB)</span>
+            <button id="btnAnalyzeUploaded" class="btn-primary btn-sm">
+              <i class="fa-solid fa-bolt"></i> Analisis File Ini
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Real-Time Results & Feedback Card -->
+      <section class="panel panel-secondary">
+        <h2 class="panel-title">
+          <i class="fa-solid fa-chart-simple"></i> Status & Hasil Klasifikasi
+        </h2>
+
+        <!-- Main Real-Time Status Card -->
+        <div class="result-card" id="mainResultCard">
+          <div class="card-status-badge badge-standby" id="resultBadge">
+            <i class="fa-solid fa-circle-notch fa-spin" id="resultBadgeIcon" style="display: none;"></i>
+            <span id="resultBadgeText">MENUNGGU INPUT</span>
+          </div>
+
+          <div class="card-main-prediction">
+            <div class="pred-label-small">Hasil Klasifikasi:</div>
+            <div class="pred-label-big" id="resultLabelBig">STANDBY</div>
+            <div class="pred-desc" id="resultDescription">
+              Mulai deteksi mikrofon atau unggah audio untuk melihat hasil klasifikasi model.
+            </div>
+          </div>
+
+          <!-- Alert Audio Banner (Triggered on Berisik) -->
+          <div class="feedback-alert-banner" id="feedbackAlertBanner">
+            <div class="banner-icon">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="banner-text">
+              <strong>PERINGATAN: KEBISINGAN TERDETEKSI!</strong>
+              <span>Audio feedback <code>notif.mp3</code> berhasil diputar otomatis.</span>
+            </div>
+            <div class="banner-sound-wave">
+              <span class="bar b1"></span>
+              <span class="bar b2"></span>
+              <span class="bar b3"></span>
+              <span class="bar b4"></span>
+            </div>
+          </div>
+
+          <!-- Probability Meters -->
+          <div class="probability-meters">
+            <div class="meter-item">
+              <div class="meter-info">
+                <span><i class="fa-solid fa-volume-xmark" style="color: #f43f5e;"></i> Probabilitas Berisik</span>
+                <span class="meter-val" id="valProbBerisik">0%</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill fill-berisik" id="barProbBerisik" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="meter-item">
+              <div class="meter-info">
+                <span><i class="fa-solid fa-shield-halved" style="color: #10b981;"></i> Probabilitas Non-Berisik</span>
+                <span class="meter-val" id="valProbNon">0%</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill fill-non-berisik" id="barProbNon" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed Parameters -->
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="stat-name"><i class="fa-solid fa-stopwatch"></i> Durasi</span>
+              <span class="stat-value" id="statDuration">-</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-name"><i class="fa-solid fa-layer-group"></i> Segmen</span>
+              <span class="stat-value" id="statSegments">-</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-name"><i class="fa-solid fa-bolt"></i> RMS Level</span>
+              <span class="stat-value" id="statRMS">-</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-name"><i class="fa-solid fa-bell"></i> Feedback</span>
+              <span class="stat-value" id="statFeedback">Siap</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Segment Breakdown (Especially for Multi-Segment Audio) -->
+        <div class="segment-breakdown-card" id="segmentCard" style="display: none;">
+          <h3 class="sub-title"><i class="fa-solid fa-timeline"></i> Timeline Per Segmen (5 Detik)</h3>
+          <div class="timeline-visual" id="timelineVisual"></div>
+          <div class="segments-list" id="segmentsList"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Activity Log / Prediction History -->
+    <section class="panel panel-history">
+      <div class="history-header">
+        <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Deteksi Kebisingan</h2>
+        <div class="history-actions">
+          <span class="history-counter" id="historyCounter">0 deteksi tercatat</span>
+          <button class="btn-ghost btn-sm" id="btnClearHistory">
+            <i class="fa-solid fa-trash"></i> Bersihkan Riwayat
+          </button>
+        </div>
+      </div>
+
+      <div class="history-table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Sumber</th>
+              <th>Hasil Klasifikasi</th>
+              <th>Probabilitas Berisik</th>
+              <th>Durasi</th>
+              <th>Status Feedback</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr class="empty-row">
+              <td colspan="6">Belum ada riwayat aktivitas. Nyalakan mikrofon atau uji file audio.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span>Tugas Proyek Sinyal Digital (PSD) &copy; 2026</span>
+        <span class="sep">•</span>
+        <span>Model Random Forest: 32 Fitur (RMS, Spectral Centroid, ZCR, MFCC 1-13)</span>
+      </div>
+      <div class="footer-right">
+        <span>Feedback Audio: <code>notif.mp3</code></span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
